@@ -5,7 +5,7 @@ import { io } from "socket.io-client"
 import axios from "axios"
 import "./payment.css"
 
-const API_URL = "http://localhost:5000"
+const API_URL = "https://aasaasteste-production.up.railway.app"
 
 export default function Payment() {
   const navigate = useNavigate()
