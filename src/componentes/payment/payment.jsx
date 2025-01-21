@@ -5,7 +5,7 @@ import { io } from "socket.io-client"
 import axios from "axios"
 import "./payment.css"
 
-const API_URL = "https://aasaasteste-production.up.railway.app"
+const API_URL = "https://asaas-front-teste.vercel.app"
 
 export default function Payment() {
   const navigate = useNavigate()
@@ -188,3 +188,4 @@ export default function Payment() {
 }
 
 //
+
