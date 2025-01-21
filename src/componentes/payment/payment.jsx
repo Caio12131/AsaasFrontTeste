@@ -1,191 +1,209 @@
-import React, { useState, useEffect } from "react"
-import { Check, Copy, AlertCircle } from "lucide-react"
-import { useNavigate } from "react-router-dom"
-import { io } from "socket.io-client"
-import axios from "axios"
-import "./payment.css"
+const express = require("express")
+const cors = require("cors")
+const axios = require("axios")
+const http = require("http")
+const { Server } = require("socket.io")
+const qrcode = require("qrcode")
+require("dotenv").config()
 
-const API_URL = "https://aasaasteste-production.up.railway.app"
+const app = express()
+const server = http.createServer(app)
 
-export default function Payment() {
-  const navigate = useNavigate()
-  const [error, setError] = useState(null)
-  const [paymentStatus, setPaymentStatus] = useState("pending")
-  const [socketConnected, setSocketConnected] = useState(false)
-  const [pixCode, setPixCode] = useState(null)
-  const [qrCodeImage, setQrCodeImage] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const value = "R$ 5,00"
-  const description = "Plano de Acompanhamento"
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://asaas-front-teste.vercel.app",
+  "https://aasaasteste-production.up.railway.app",
+]
 
-  useEffect(() => {
-    const socket = io(API_URL, {
-      transports: ["websocket", "polling"],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      timeout: 10000,
-      secure: true,
-      withCredentials: true,
+// Updated CORS configuration
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "access_token"],
+    credentials: true,
+  }),
+)
+
+app.use(express.json())
+
+const ASAAS_API_KEY = process.env.ASAAS_API_KEY
+const ASAAS_API_URL = process.env.ASAAS_API_URL || "https://www.asaas.com/api/v3"
+
+if (!ASAAS_API_KEY) {
+  console.error("ASAAS_API_KEY is not set in the environment variables")
+  process.exit(1)
+}
+
+console.log("ASAAS_API_KEY:", ASAAS_API_KEY ? `is set (length: ${ASAAS_API_KEY.length})` : "is not set")
+console.log("ASAAS_API_URL:", ASAAS_API_URL)
+
+async function createOrUpdateCustomer(name, email) {
+  try {
+    const customerResponse = await axios.get(`${ASAAS_API_URL}/customers?email=${email}`, {
+      headers: {
+        "Content-Type": "application/json",
+        access_token: ASAAS_API_KEY,
+      },
     })
 
-    socket.on("connect", () => {
-      console.log("Socket.IO conectado!")
-      setSocketConnected(true)
-      setError(null)
-    })
-
-    socket.on("connect_error", (err) => {
-      console.error("Erro de conexão Socket.IO:", err)
-      setSocketConnected(false)
-      setError("Erro de conexão com o servidor. Tentando reconectar...")
-    })
-
-    socket.on("disconnect", (reason) => {
-      console.log("Socket.IO desconectado:", reason)
-      setSocketConnected(false)
-      if (reason === "io server disconnect") {
-        socket.connect()
-      }
-    })
-
-    socket.on("paymentReceived", (data) => {
-      console.log("Evento de pagamento recebido:", data)
-      if (data.status === "confirmed") {
-        setPaymentStatus("confirmed")
-        setError(null)
-        setTimeout(() => navigate("/thanks"), 2000)
-      } else if (data.status === "failed") {
-        setPaymentStatus("failed")
-        setError("Pagamento falhou. Tente novamente.")
-      }
-    })
-
-    return () => {
-      socket.disconnect()
-    }
-  }, [navigate])
-
-  const generatePayment = async () => {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const paymentResponse = await axios.post(
-        `${API_URL}/payments`,
-        {
-          value: 5.0,
-          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // Due date set to 7 days from now
-          description: "Plano de Acompanhamento",
-        },
+    if (customerResponse.data.data.length > 0) {
+      const customerId = customerResponse.data.data[0].id
+      await axios.post(
+        `${ASAAS_API_URL}/customers/${customerId}`,
+        { name, email },
         {
           headers: {
             "Content-Type": "application/json",
+            access_token: ASAAS_API_KEY,
           },
         },
       )
-
-      console.log("Payment response:", paymentResponse)
-
-      if (paymentResponse.status === 200 && paymentResponse.data) {
-        const { pixQrCode, qrCodeImage } = paymentResponse.data
-        setPixCode(pixQrCode)
-        setQrCodeImage(qrCodeImage)
-      } else {
-        throw new Error("Resposta inesperada do servidor")
-      }
-    } catch (error) {
-      console.error("Erro detalhado:", error.response?.data || error.message)
-      setError(error.response?.data?.error || "Ocorreu um erro ao gerar o pagamento. Por favor, tente novamente.")
-    } finally {
-      setIsLoading(false)
+      return customerId
+    } else {
+      const newCustomerResponse = await axios.post(
+        `${ASAAS_API_URL}/customers`,
+        { name, email },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            access_token: ASAAS_API_KEY,
+          },
+        },
+      )
+      return newCustomerResponse.data.id
     }
+  } catch (error) {
+    console.error("Erro ao criar ou atualizar cliente:", error.message)
+    throw error
   }
-
-  const copyToClipboard = async () => {
-    if (!pixCode) {
-      setError("Código PIX não disponível para cópia.")
-      return
-    }
-    try {
-      await navigator.clipboard.writeText(pixCode)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
-      console.error("Erro ao copiar:", err)
-      setError("Não foi possível copiar o código PIX.")
-    }
-  }
-
-  return (
-    <div className="payment-container">
-      <div className="payment-card">
-        <h2 className="payment-title">Pagamento PIX</h2>
-        <div className="payment-content">
-          <h3 className="payment-description">{description}</h3>
-          <p className="payment-value">{value}</p>
-
-          {error ? (
-            <div className="error-container">
-              <AlertCircle className="error-icon" />
-              <p className="error-text">{error}</p>
-              <button onClick={generatePayment} className="retry-button">
-                Tentar novamente
-              </button>
-            </div>
-          ) : (
-            <>
-              {qrCodeImage ? (
-                <img
-                  src={qrCodeImage || "/placeholder.svg"}
-                  alt="QR Code PIX"
-                  className="qr-code"
-                  style={{ maxWidth: "200px", width: "100%", height: "auto" }}
-                />
-              ) : (
-                <button onClick={generatePayment} disabled={isLoading} className="generate-payment-button">
-                  {isLoading ? "Gerando..." : "Gerar Pagamento PIX"}
-                </button>
-              )}
-            </>
-          )}
-
-          {pixCode && (
-            <button onClick={copyToClipboard} className="copy-button" disabled={!!error || !socketConnected}>
-              {copied ? (
-                <>
-                  <Check size={20} />
-                  <span>Copiado!</span>
-                </>
-              ) : (
-                <>
-                  <Copy size={20} />
-                  <span>Copiar código PIX</span>
-                </>
-              )}
-            </button>
-          )}
-
-          {!error && (
-            <div
-              className={`payment-status ${
-                paymentStatus === "confirmed"
-                  ? "status-confirmed"
-                  : paymentStatus === "failed"
-                    ? "status-failed"
-                    : "status-pending"
-              }`}
-            >
-              {paymentStatus === "confirmed"
-                ? "Pagamento confirmado!"
-                : paymentStatus === "failed"
-                  ? "Pagamento falhou. Tente novamente."
-                  : "Aguardando pagamento..."}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
 }
+
+app.post("/payments", async (req, res) => {
+  try {
+    const { value, description } = req.body
+    console.log("Dados recebidos na requisição de pagamento:", { value, description })
+
+    // Verifica se os campos obrigatórios estão presentes
+    if (!value || !description) {
+      console.warn("Informações obrigatórias ausentes na requisição de pagamento.")
+      return res.status(400).json({
+        error: "Informações de pagamento obrigatórias ausentes",
+        details: { value, description },
+      })
+    }
+
+    // Prepara os dados para a criação do QR Code estático
+    const pixPaymentData = {
+      value: Number(value).toFixed(2),
+      description,
+    }
+
+    console.log("Preparando para enviar dados ao Asaas:", pixPaymentData)
+
+    // Faz a requisição para criar o QR Code estático
+    const response = await axios.post(`${ASAAS_API_URL}/pix/qrCodes/static`, pixPaymentData, {
+      headers: {
+        "Content-Type": "application/json",
+        access_token: ASAAS_API_KEY,
+      },
+    })
+
+    console.log("Resposta do Asaas para a criação do QR Code PIX:", response.data)
+
+    // Verifica se a resposta contém os dados esperados
+    if (response.data && response.data.encodedImage && response.data.payload) {
+      res.status(200).json({
+        message: "Pagamento PIX gerado com sucesso.",
+        value: pixPaymentData.value,
+        description: pixPaymentData.description,
+        pixQrCode: response.data.payload,
+        qrCodeImage: `data:image/png;base64,${response.data.encodedImage}`, // Certifique-se de adicionar o prefixo base64
+      })
+    } else {
+      throw new Error("Não foi possível obter o QR Code PIX")
+    }
+  } catch (error) {
+    console.error("Erro ao criar pagamento PIX:", error.message)
+    console.error("Detalhes do erro:", error.response?.data || "Sem resposta detalhada do Asaas")
+    res.status(500).json({
+      error: "Erro ao gerar pagamento PIX",
+      details: error.response?.data || error.message,
+    })
+  }
+})
+
+app.post("/webhook", async (req, res) => {
+  try {
+    const { event, payment } = req.body
+    console.log("Webhook recebido. Dados:", req.body)
+
+    if (!event || !payment) {
+      console.error("Dados inválidos recebidos no webhook:", req.body)
+      return res.status(400).send("Dados inválidos no webhook")
+    }
+
+    switch (event) {
+      case "PAYMENT_CREATED":
+        console.log(`Pagamento PIX criado. ID=${payment.id}, Valor=${payment.value}`)
+        io.emit("paymentCreated", {
+          paymentId: payment.id,
+          value: payment.value,
+          status: "created",
+          message: "Pagamento PIX criado com sucesso!",
+        })
+        break
+      case "PAYMENT_RECEIVED":
+        console.log(`Pagamento PIX recebido. ID=${payment.id}, Valor=${payment.value}`)
+        io.emit("paymentReceived", {
+          paymentId: payment.id,
+          value: payment.value,
+          status: "confirmed",
+          message: "Pagamento PIX confirmado com sucesso!",
+        })
+        break
+      case "PAYMENT_UPDATED":
+        console.log(`Pagamento PIX atualizado. ID=${payment.id}, Valor=${payment.value}, Status=${payment.status}`)
+        io.emit("paymentUpdated", {
+          paymentId: payment.id,
+          value: payment.value,
+          status: payment.status,
+          message: `Status do pagamento PIX atualizado para ${payment.status}`,
+        })
+        break
+      default:
+        console.warn("Evento não reconhecido recebido no webhook:", event)
+    }
+
+    res.status(200).send("Evento processado com sucesso")
+  } catch (error) {
+    console.error("Erro no processamento do webhook:", error.message)
+    res.status(500).send("Erro interno no webhook")
+  }
+})
+
+// Updated Socket.IO configuration
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true,
+    transports: ["websocket", "polling"],
+  },
+  pingTimeout: 60000,
+  pingInterval: 25000,
+})
+
+io.on("connection", (socket) => {
+  console.log("Novo cliente conectado:", socket.id)
+
+  socket.on("disconnect", () => {
+    console.log("Cliente desconectado:", socket.id)
+  })
+})
+
+const PORT = process.env.PORT || 5000
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
+})
 
