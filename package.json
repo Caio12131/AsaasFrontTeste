@@ -1,0 +1,39 @@
+{
+    "name": "asaasfront",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "react-scripts start",
+        "build": "react-scripts build",
+        "test": "react-scripts test",
+        "eject": "react-scripts eject"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "buffer": "^6.0.3",
+        "cors": "^2.8.5",
+        "crc": "^4.3.2",
+        "qrcode": "^1.5.4",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "react-input-mask": "^2.0.4",
+        "react-router-dom": "^7.1.1"
+    },
+    "proxy": "https://aasaasteste-production.up.railway.app",
+    "devDependencies": {
+        "browserify-zlib": "^0.2.0",
+        "crypto-browserify": "^3.12.1",
+        "https-browserify": "^1.0.0",
+        "os-browserify": "^0.3.0",
+        "path-browserify": "^1.0.1",
+        "process": "^0.11.10",
+        "querystring-es3": "^0.2.1",
+        "stream-browserify": "^3.0.0",
+        "stream-http": "^3.2.0",
+        "url": "^0.11.4",
+        "util": "^0.12.5"
+    }
+}
