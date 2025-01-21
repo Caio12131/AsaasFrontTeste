@@ -2,7 +2,7 @@
     "name": "asaasfront",
     "version": "1.0.0",
     "description": "",
-    "main": "index.js",
+    "main": "src/componentes/home/home.js.js",
     "scripts": {
         "start": "react-scripts start",
         "build": "react-scripts build",
@@ -20,7 +20,8 @@
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
         "react-input-mask": "^2.0.4",
-        "react-router-dom": "^7.1.1"
+        "react-router-dom": "^7.1.1",
+        "react-scripts": "^5.0.1"
     },
     "proxy": "https://aasaasteste-production.up.railway.app",
     "devDependencies": {
