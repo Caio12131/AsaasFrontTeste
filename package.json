@@ -23,7 +23,8 @@
         "react-dom": "^18.3.1",
         "react-input-mask": "^2.0.4",
         "react-router-dom": "^7.1.1",
-        "react-scripts": "^5.0.1"
+        "react-scripts": "^5.0.1",
+        "socket.io-client": "^4.8.1"
     },
     "proxy": "https://aasaasteste-production.up.railway.app",
     "devDependencies": {
