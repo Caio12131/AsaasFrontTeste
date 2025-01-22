@@ -2,7 +2,7 @@ import React, { useState } from "react"
 import axios from "axios"
 import { PaymentStatus } from "./paymentStatus"
 
-export function Payment() {
+export default function Payment() {
   const [value, setValue] = useState("")
   const [description, setDescription] = useState("")
   const [paymentInfo, setPaymentInfo] = useState(null)
