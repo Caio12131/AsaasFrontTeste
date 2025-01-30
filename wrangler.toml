@@ -1,7 +1,7 @@
 name = "personal-inteligente"
 type = "javascript"
 
-account_id = "SEU_CLOUDFLARE_ACCOUNT_ID"
+account_id = "e1057b9d90ac5608b750b856533975eaac23f"
 workers_dev = true
 route = ""
 zone_id = ""
@@ -15,11 +15,3 @@ name = "personal-inteligente-prod"
 workers_dev = false
 route = "https://seu-dominio.com/*"
 zone_id = "SEU_ZONE_ID"
-
-[vars]
-FIREBASE_API_KEY = "SUA_API_KEY"
-FIREBASE_AUTH_DOMAIN = "SEU_AUTH_DOMAIN"
-FIREBASE_PROJECT_ID = "SEU_PROJECT_ID"
-FIREBASE_STORAGE_BUCKET = "SEU_STORAGE_BUCKET"
-FIREBASE_MESSAGING_SENDER_ID = "SEU_SENDER_ID"
-FIREBASE_APP_ID = "SEU_APP_ID"
