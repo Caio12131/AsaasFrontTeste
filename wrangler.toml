@@ -9,12 +9,10 @@ zone_id = ""
 [build]
 command = "npm run build"
 upload.format = "service-worker"
-pages_build_output_dir = "build"  # Ajuste aqui
-
+pages_build_output_dir = "build"  # Ajuste aqui para o diretório correto do build
 
 [env.production]
 name = "personal-inteligente-prod"
 workers_dev = false
 route = "https://seu-dominio.com/*"
 zone_id = "SEU_ZONE_ID"
-
